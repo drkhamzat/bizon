@@ -1,0 +1,14 @@
+tasks:
+  - name: Install Server Dependencies
+    init: cd server && npm install
+    command: cd server && npm start
+
+  - name: Install Client Dependencies
+    init: cd client && npm install
+    command: cd client && npm start
+
+ports:
+  - port: 3000
+    onOpen: open-preview
+  - port: 5000
+    onOpen: ignore 

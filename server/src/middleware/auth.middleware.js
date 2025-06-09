@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // Middleware для защиты маршрутов
-exports.protect = async (req, res, next) => {
+exports.auth = async (req, res, next) => {
   let token;
 
   // Проверяем наличие токена в заголовке Authorization

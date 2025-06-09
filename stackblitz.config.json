@@ -1,0 +1,10 @@
+{
+  "installDependencies": true,
+  "startCommand": "cd server && npm start",
+  "env": {
+    "PORT": "5000",
+    "MONGO_URI": "mongodb+srv://jonsnow04:g9r2DQZHSISIA8DX@clusterbizon.kaxvsdh.mongodb.net/?retryWrites=true&w=majority&appName=ClusterBizon",
+    "JWT_SECRET": "bizon_secret_key_change_in_production",
+    "NODE_ENV": "development"
+  }
+} 

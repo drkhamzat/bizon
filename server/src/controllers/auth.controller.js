@@ -8,7 +8,9 @@ const generateToken = (id) => {
   });
 };
 
-// Регистрация пользователя
+// @desc    Регистрация нового пользователя
+// @route   POST /api/auth/register
+// @access  Public
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -18,7 +20,6 @@ exports.register = async (req, res) => {
 
     if (userExists) {
       return res.status(400).json({
-        success: false,
         message: 'Пользователь с таким email уже существует',
       });
     }
@@ -32,32 +33,28 @@ exports.register = async (req, res) => {
 
     if (user) {
       res.status(201).json({
-        success: true,
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
         token: generateToken(user._id),
       });
     } else {
       res.status(400).json({
-        success: false,
         message: 'Неверные данные пользователя',
       });
     }
   } catch (error) {
     console.error('Ошибка при регистрации:', error);
     res.status(500).json({
-      success: false,
-      message: 'Не удалось зарегистрировать пользователя',
-      error: error.message,
+      message: 'Ошибка сервера',
     });
   }
 };
 
-// Авторизация пользователя
+// @desc    Аутентификация пользователя и получение токена
+// @route   POST /api/auth/login
+// @access  Public
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -65,61 +62,53 @@ exports.login = async (req, res) => {
     // Поиск пользователя по email
     const user = await User.findOne({ email });
 
-    // Проверка пароля
+    // Проверка пользователя и пароля
     if (user && (await user.matchPassword(password))) {
       res.json({
-        success: true,
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
         token: generateToken(user._id),
       });
     } else {
       res.status(401).json({
-        success: false,
         message: 'Неверный email или пароль',
       });
     }
   } catch (error) {
-    console.error('Ошибка при авторизации:', error);
+    console.error('Ошибка при входе:', error);
     res.status(500).json({
-      success: false,
-      message: 'Не удалось авторизоваться',
-      error: error.message,
+      message: 'Ошибка сервера',
     });
   }
 };
 
-// Получение профиля пользователя
+// @desc    Получить профиль пользователя
+// @route   GET /api/auth/profile
+// @access  Private
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-
+    
     if (user) {
-      res.json({
-        success: true,
-        user,
-      });
+      res.json(user);
     } else {
       res.status(404).json({
-        success: false,
         message: 'Пользователь не найден',
       });
     }
   } catch (error) {
     console.error('Ошибка при получении профиля:', error);
     res.status(500).json({
-      success: false,
-      message: 'Не удалось получить профиль пользователя',
-      error: error.message,
+      message: 'Ошибка сервера',
     });
   }
 };
 
-// Обновление профиля пользователя
+// @desc    Обновить профиль пользователя
+// @route   PUT /api/auth/profile
+// @access  Private
 exports.updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -127,45 +116,44 @@ exports.updateUserProfile = async (req, res) => {
     if (user) {
       user.name = req.body.name || user.name;
       user.email = req.body.email || user.email;
-      user.phone = req.body.phone || user.phone;
       
-      if (req.body.address) {
-        user.address = {
-          ...user.address,
-          ...req.body.address,
-        };
-      }
-
       if (req.body.password) {
         user.password = req.body.password;
+      }
+
+      if (req.body.phone) {
+        user.phone = req.body.phone;
+      }
+
+      if (req.body.address) {
+        user.address = {
+          city: req.body.address.city || user.address?.city,
+          street: req.body.address.street || user.address?.street,
+          house: req.body.address.house || user.address?.house,
+          apartment: req.body.address.apartment || user.address?.apartment,
+        };
       }
 
       const updatedUser = await user.save();
 
       res.json({
-        success: true,
-        user: {
-          _id: updatedUser._id,
-          name: updatedUser.name,
-          email: updatedUser.email,
-          role: updatedUser.role,
-          phone: updatedUser.phone,
-          address: updatedUser.address,
-        },
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
+        role: updatedUser.role,
         token: generateToken(updatedUser._id),
       });
     } else {
       res.status(404).json({
-        success: false,
         message: 'Пользователь не найден',
       });
     }
   } catch (error) {
     console.error('Ошибка при обновлении профиля:', error);
     res.status(500).json({
-      success: false,
-      message: 'Не удалось обновить профиль пользователя',
-      error: error.message,
+      message: 'Ошибка сервера',
     });
   }
 }; 
