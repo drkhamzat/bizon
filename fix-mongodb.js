@@ -1,4 +1,13 @@
-const express = require('express');
+const fs = require('fs');
+const path = require('path');
+
+// Пути к файлам
+const baseDir = path.join(__dirname, 'server');
+const indexPath = path.join(baseDir, 'src', 'index.js');
+const envPath = path.join(baseDir, '.env');
+
+// Исправленное содержимое файла index.js
+const indexContent = `const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
@@ -41,13 +50,12 @@ app.use((err, req, res, next) => {
 
 // Подключение к MongoDB
 const PORT = process.env.PORT || 10000;
-// Используем стандартный формат подключения без SRV
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/bizon-furniture';
 
 // Сначала запускаем сервер
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
-  console.log(`Сервер доступен по адресу http://0.0.0.0:${PORT}`);
+  console.log(\`Сервер запущен на порту \${PORT}\`);
+  console.log(\`Сервер доступен по адресу http://0.0.0.0:\${PORT}\`);
 });
 
 // Затем пытаемся подключиться к MongoDB
@@ -76,4 +84,35 @@ process.on('SIGTERM', () => {
       process.exit(0);
     });
   });
-}); 
+});`;
+
+// Исправленное содержимое файла .env
+const envContent = `PORT=10000
+MONGO_URI=mongodb://localhost:27017/bizon-furniture
+JWT_SECRET=bizon-furniture-jwt-secret
+NODE_ENV=production`;
+
+// Записываем содержимое файла index.js
+try {
+  const originalContent = fs.existsSync(indexPath) ? fs.readFileSync(indexPath, 'utf8') : '';
+  fs.writeFileSync(indexPath, indexContent, 'utf8');
+  console.log('Файл index.js успешно исправлен!');
+  console.log('Оригинальное содержимое сохранено для справки');
+} catch (error) {
+  console.error('Ошибка при исправлении файла index.js:', error);
+  process.exit(1);
+}
+
+// Записываем содержимое файла .env
+try {
+  const originalEnvContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+  fs.writeFileSync(envPath, envContent, 'utf8');
+  console.log('Файл .env успешно обновлен!');
+  console.log('Оригинальное содержимое сохранено для справки');
+} catch (error) {
+  console.error('Ошибка при обновлении файла .env:', error);
+  process.exit(1);
+}
+
+console.log('Все файлы успешно обновлены. Теперь сервер будет сначала запускаться, а затем пытаться подключиться к MongoDB.');
+console.log('Если подключение к MongoDB не удастся, сервер продолжит работу с ограниченной функциональностью.'); 

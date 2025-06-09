@@ -7,6 +7,7 @@ const baseDir = path.join(__dirname, 'server');
 const controllerPath = path.join(baseDir, 'src', 'controllers', 'product.controller.js');
 const orderControllerPath = path.join(baseDir, 'src', 'controllers', 'order.controller.js');
 const orderRoutesPath = path.join(baseDir, 'src', 'routes', 'order.routes.js');
+const indexPath = path.join(baseDir, 'src', 'index.js');
 const envPath = path.join(baseDir, '.env');
 
 console.log('Пути к файлам:');
@@ -14,6 +15,7 @@ console.log('baseDir:', baseDir);
 console.log('controllerPath:', controllerPath);
 console.log('orderControllerPath:', orderControllerPath);
 console.log('orderRoutesPath:', orderRoutesPath);
+console.log('indexPath:', indexPath);
 console.log('envPath:', envPath);
 
 // Содержимое файла product.controller.js
@@ -390,9 +392,110 @@ router.delete('/:id', auth, admin, orderController.deleteOrder);
 
 module.exports = router;`;
 
-// Содержимое файла .env
+// Содержимое файла index.js с исправленным подключением к MongoDB
+const indexContent = `const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
+
+// Импорт маршрутов
+const productRoutes = require('./routes/product.routes');
+const categoryRoutes = require('./routes/category.routes');
+const orderRoutes = require('./routes/order.routes');
+const userRoutes = require('./routes/user.routes');
+const authRoutes = require('./routes/auth.routes');
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Статические файлы
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Базовый маршрут для проверки работы сервера
+app.get('/', (req, res) => {
+  res.json({ message: 'Сервер BIZON работает!' });
+});
+
+// Маршруты API
+app.use('/api/products', productRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
+
+// Обработка ошибок
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send({ message: 'Что-то пошло не так!' });
+});
+
+// Подключение к MongoDB
+const PORT = process.env.PORT || 10000;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/bizon-furniture';
+
+const startServer = async () => {
+  try {
+    // Опции подключения к MongoDB
+    const options = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000 // Таймаут 5 секунд
+    };
+
+    // Попытка подключения к MongoDB
+    await mongoose.connect(MONGO_URI, options);
+    console.log('Подключено к MongoDB');
+    
+    // Запуск сервера после успешного подключения к MongoDB
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(\`Сервер запущен на порту \${PORT}\`);
+      console.log(\`Сервер доступен по адресу http://0.0.0.0:\${PORT}\`);
+    });
+
+    // Обработка сигналов завершения
+    process.on('SIGTERM', () => {
+      console.log('Получен сигнал SIGTERM. Завершение работы сервера...');
+      server.close(() => {
+        console.log('Сервер остановлен');
+        mongoose.connection.close(false, () => {
+          console.log('Соединение с MongoDB закрыто');
+          process.exit(0);
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Ошибка подключения к MongoDB:', error);
+    
+    // В режиме разработки можно продолжить работу без MongoDB
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Запуск сервера без подключения к MongoDB (режим разработки)');
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(\`Сервер запущен на порту \${PORT} без подключения к MongoDB\`);
+        console.log(\`Сервер доступен по адресу http://0.0.0.0:\${PORT}\`);
+      });
+    } else {
+      // В продакшене также запускаем сервер, но с ограниченной функциональностью
+      console.warn('Запуск сервера без подключения к MongoDB в режиме production. Функциональность будет ограничена!');
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(\`Сервер запущен на порту \${PORT} без подключения к MongoDB\`);
+        console.log(\`Сервер доступен по адресу http://0.0.0.0:\${PORT}\`);
+      });
+    }
+  }
+};
+
+// Запуск сервера
+startServer();`;
+
+// Содержимое файла .env с исправленным URI MongoDB
 const envContent = `PORT=10000
-MONGO_URI=mongodb+srv://drkhamzat:bizonpass123@cluster0.zcqnqmz.mongodb.net/bizon-furniture?retryWrites=true&w=majority
+MONGO_URI=mongodb+srv://drkhamzat:bizonpass123@cluster0.zcqnqmz.mongodb.net/bizon-furniture?retryWrites=true&w=majority&directConnection=true
 JWT_SECRET=bizon-furniture-jwt-secret
 NODE_ENV=production`;
 
@@ -433,6 +536,15 @@ try {
   console.log('Файл order.routes.js успешно исправлен!');
 } catch (error) {
   console.error('Ошибка при исправлении файла order.routes.js:', error);
+  process.exit(1);
+}
+
+// Записываем содержимое файла index.js
+try {
+  fs.writeFileSync(indexPath, indexContent, 'utf8');
+  console.log('Файл index.js успешно исправлен!');
+} catch (error) {
+  console.error('Ошибка при исправлении файла index.js:', error);
   process.exit(1);
 }
 

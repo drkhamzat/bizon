@@ -1,3 +1,44 @@
+# Инструкции по настройке Render.com
+
+## 1. Обновите package.json
+
+Замените содержимое файла package.json на следующее:
+
+```json
+{
+  "name": "bizon-furniture-store",
+  "version": "1.0.0",
+  "description": "Bizon Furniture Store",
+  "main": "emergency-server.js",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "start": "node emergency-server.js",
+    "server": "cd server && npm start",
+    "client": "cd client && npm install && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "keywords": [
+    "furniture",
+    "store",
+    "ecommerce"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}
+```
+
+## 2. Настройте файл server/src/index.js
+
+Замените содержимое файла server/src/index.js на следующее:
+
+```javascript
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -76,4 +117,66 @@ process.on('SIGTERM', () => {
       process.exit(0);
     });
   });
-}); 
+});
+```
+
+## 3. Создайте файл emergency-server.js
+
+Создайте файл emergency-server.js в корне проекта со следующим содержимым:
+
+```javascript
+const express = require('express');
+const cors = require('cors');
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+const PORT = process.env.PORT || 10000;
+
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Сервер BIZON работает!',
+    time: new Date().toISOString()
+  });
+});
+
+app.get('/api/status', (req, res) => {
+  res.json({
+    status: 'online',
+    mode: 'emergency',
+    time: new Date().toISOString()
+  });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Сервер запущен на порту ${PORT}`);
+});
+```
+
+## 4. Настройте переменные окружения в Render.com
+
+Добавьте следующие переменные окружения в разделе "Environment Variables":
+
+```
+PORT=10000
+MONGO_URI=mongodb://localhost:27017/bizon-furniture
+JWT_SECRET=bizon-furniture-jwt-secret
+NODE_ENV=production
+```
+
+## 5. Настройте конфигурацию деплоя
+
+- **Start Command**: `node emergency-server.js`
+- **Node Version**: 14.0.0 или выше
+- **Build Command**: `npm install`
+
+## 6. Проверка после деплоя
+
+После успешного деплоя перейдите по адресу вашего приложения. Вы должны увидеть сообщение:
+```json
+{
+  "message": "Сервер BIZON работает!",
+  "time": "2023-06-10T12:34:56.789Z"
+}
+```
