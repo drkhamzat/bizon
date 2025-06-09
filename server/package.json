@@ -4,11 +4,8 @@
   "description": "Backend for Bizon Furniture Store",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/fix-controller.js && node src/index.js",
-    "dev": "nodemon src/index.js",
-    "data:import": "node src/seeder.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "fix": "node src/fix-controller.js"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
   },
   "keywords": [
     "furniture",

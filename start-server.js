@@ -4,6 +4,7 @@ const { spawn, execSync } = require('child_process');
 
 // Путь к файлу product.controller.js
 const controllerPath = path.join(__dirname, 'server', 'src', 'controllers', 'product.controller.js');
+const envPath = path.join(__dirname, 'server', '.env');
 
 // Содержимое файла product.controller.js
 const controllerContent = `const Product = require('../models/Product');
@@ -216,18 +217,33 @@ exports.getDiscountedProducts = async (req, res) => {
   }
 };`;
 
+// Содержимое файла .env
+const envContent = `PORT=5000
+MONGO_URI=mongodb+srv://drkhamzat:bizonpass123@cluster0.zcqnqmz.mongodb.net/bizon-furniture?retryWrites=true&w=majority
+JWT_SECRET=bizon-furniture-jwt-secret
+NODE_ENV=production`;
+
 // Создаем директорию, если она не существует
 const controllersDir = path.dirname(controllerPath);
 if (!fs.existsSync(controllersDir)) {
   fs.mkdirSync(controllersDir, { recursive: true });
 }
 
-// Записываем содержимое файла
+// Записываем содержимое файла product.controller.js
 try {
   fs.writeFileSync(controllerPath, controllerContent, 'utf8');
   console.log('Файл product.controller.js успешно исправлен!');
 } catch (error) {
-  console.error('Ошибка при исправлении файла:', error);
+  console.error('Ошибка при исправлении файла product.controller.js:', error);
+  process.exit(1);
+}
+
+// Записываем содержимое файла .env
+try {
+  fs.writeFileSync(envPath, envContent, 'utf8');
+  console.log('Файл .env успешно создан!');
+} catch (error) {
+  console.error('Ошибка при создании файла .env:', error);
   process.exit(1);
 }
 
