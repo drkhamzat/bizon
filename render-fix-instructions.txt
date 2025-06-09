@@ -1,0 +1,83 @@
+# Fixing encoding error in package.json on Render.com
+
+## Problem:
+The package.json file contains incorrect characters or BOM (Byte Order Mark),
+which causes an error: `JSON.parse Unexpected token "" (0xFFFD)`.
+
+## Solution:
+
+### 1. Delete the old package.json and create a new one:
+
+Use the GitHub interface to create a new package.json file with the following content:
+
+```
+{
+  "name": "bizon-furniture-store",
+  "version": "1.0.0",
+  "description": "Bizon Furniture Store",
+  "main": "emergency-server.js",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "start": "node emergency-server.js",
+    "server": "cd server && npm start",
+    "client": "cd client && npm install && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "keywords": [
+    "furniture",
+    "store",
+    "ecommerce"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}
+```
+
+### 2. Create a file emergency-server.js:
+
+```
+const express = require('express');
+const cors = require('cors');
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+const PORT = process.env.PORT || 10000;
+
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'BIZON server is running!',
+    time: new Date().toISOString()
+  });
+});
+
+app.get('/api/status', (req, res) => {
+  res.json({
+    status: 'online',
+    mode: 'emergency',
+    time: new Date().toISOString()
+  });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+```
+
+### 3. Set up deployment on Render.com:
+
+- **Start Command**: `node emergency-server.js`
+- **Node Version**: 14.0.0 or higher
+- **Build Command**: `npm install`
+
+### 4. Make sure the files are saved in UTF-8 encoding without BOM.
+
+This should fix the encoding issue with the package.json file.
