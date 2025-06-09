@@ -156,4 +156,4 @@ exports.updateUserProfile = async (req, res) => {
       message: 'Ошибка сервера',
     });
   }
-}; 
+};
