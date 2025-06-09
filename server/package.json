@@ -1,26 +1,36 @@
 {
   "name": "bizon-furniture-server",
   "version": "1.0.0",
-  "description": "Серверная часть мебельного магазина Bizon",
+  "description": "Backend for Bizon Furniture Store",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/fix-controller.js && node src/index.js",
     "dev": "nodemon src/index.js",
     "data:import": "node src/seeder.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "fix": "node src/fix-controller.js"
   },
+  "keywords": [
+    "furniture",
+    "store",
+    "ecommerce",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "express-validator": "^7.0.1",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^7.5.0",
-    "multer": "^1.4.5-lts.1"
+    "express-async-handler": "^1.2.0",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.4",
+    "multer": "^1.4.5-lts.1",
+    "slugify": "^1.6.6"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^2.0.22"
   },
   "engines": {
     "node": ">=14.0.0"

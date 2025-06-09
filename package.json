@@ -2,16 +2,14 @@
   "name": "bizon-furniture-store",
   "version": "1.0.0",
   "description": "Bizon Furniture Store",
-  "main": "index.js",
+  "main": "server.js",
   "engines": {
     "node": ">=14.0.0"
   },
   "scripts": {
-    "start": "cd server && npm install && npm start",
+    "start": "node server.js",
     "client": "cd client && npm install && npm start",
-    "dev": "concurrently \"npm run start\" \"npm run client\"",
-    "fix-encoding": "bash fix-encoding.sh",
-    "prestart": "bash fix-encoding.sh"
+    "dev": "concurrently \"npm run start\" \"npm run client\""
   },
   "keywords": [
     "furniture",
