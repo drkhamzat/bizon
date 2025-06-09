@@ -88,7 +88,7 @@ exports.deleteCategory = async (req, res) => {
       return res.status(404).json({ message: 'Категория не найдена' });
     }
     
-    await category.remove();
+    await category.deleteOne();
     
     res.json({ message: 'Категория удалена' });
   } catch (error) {
