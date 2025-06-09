@@ -2,9 +2,19 @@ const fs = require('fs');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 
-// Путь к файлу product.controller.js
-const controllerPath = path.join(__dirname, 'server', 'src', 'controllers', 'product.controller.js');
-const envPath = path.join(__dirname, 'server', '.env');
+// Пути к файлам
+const baseDir = path.join(__dirname, 'server');
+const controllerPath = path.join(baseDir, 'src', 'controllers', 'product.controller.js');
+const orderControllerPath = path.join(baseDir, 'src', 'controllers', 'order.controller.js');
+const orderRoutesPath = path.join(baseDir, 'src', 'routes', 'order.routes.js');
+const envPath = path.join(baseDir, '.env');
+
+console.log('Пути к файлам:');
+console.log('baseDir:', baseDir);
+console.log('controllerPath:', controllerPath);
+console.log('orderControllerPath:', orderControllerPath);
+console.log('orderRoutesPath:', orderRoutesPath);
+console.log('envPath:', envPath);
 
 // Содержимое файла product.controller.js
 const controllerContent = `const Product = require('../models/Product');
@@ -217,16 +227,186 @@ exports.getDiscountedProducts = async (req, res) => {
   }
 };`;
 
+// Содержимое файла order.controller.js
+const orderControllerContent = `const Order = require('../models/Order');
+
+// @desc    Получить все заказы
+// @route   GET /api/orders
+// @access  Private/Admin
+exports.getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({}).populate('user', 'id name email');
+    res.json(orders);
+  } catch (error) {
+    console.error('Ошибка при получении заказов:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+};
+
+// @desc    Получить мои заказы
+// @route   GET /api/orders/myorders
+// @access  Private
+exports.getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.user._id });
+    res.json(orders);
+  } catch (error) {
+    console.error('Ошибка при получении заказов пользователя:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+};
+
+// @desc    Получить заказ по ID
+// @route   GET /api/orders/:id
+// @access  Private
+exports.getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).populate('user', 'name email');
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Заказ не найден' });
+    }
+    
+    // Проверяем, что заказ принадлежит текущему пользователю или пользователь админ
+    if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Нет доступа к этому заказу' });
+    }
+    
+    res.json(order);
+  } catch (error) {
+    console.error('Ошибка при получении заказа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+};
+
+// @desc    Создать новый заказ
+// @route   POST /api/orders
+// @access  Private
+exports.createOrder = async (req, res) => {
+  try {
+    const { 
+      items, 
+      totalAmount, 
+      customerInfo,
+      comment,
+      paymentMethod
+    } = req.body;
+    
+    if (!items || items.length === 0) {
+      return res.status(400).json({ message: 'Нет товаров в заказе' });
+    }
+    
+    const order = new Order({
+      user: req.user._id,
+      items,
+      totalAmount,
+      customerInfo,
+      comment,
+      paymentMethod
+    });
+    
+    const createdOrder = await order.save();
+    
+    res.status(201).json(createdOrder);
+  } catch (error) {
+    console.error('Ошибка при создании заказа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+};
+
+// @desc    Обновить статус заказа
+// @route   PUT /api/orders/:id/status
+// @access  Private/Admin
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    const order = await Order.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Заказ не найден' });
+    }
+    
+    order.status = status;
+    
+    if (status === 'завершен') {
+      order.isPaid = true;
+      order.paidAt = Date.now();
+    }
+    
+    const updatedOrder = await order.save();
+    
+    res.json(updatedOrder);
+  } catch (error) {
+    console.error('Ошибка при обновлении статуса заказа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+};
+
+// @desc    Удалить заказ
+// @route   DELETE /api/orders/:id
+// @access  Private/Admin
+exports.deleteOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Заказ не найден' });
+    }
+    
+    await order.deleteOne();
+    
+    res.json({ message: 'Заказ удален' });
+  } catch (error) {
+    console.error('Ошибка при удалении заказа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+};`;
+
+// Содержимое файла order.routes.js
+const orderRoutesContent = `const express = require('express');
+const router = express.Router();
+const { auth, admin } = require('../middleware/auth.middleware');
+const orderController = require('../controllers/order.controller');
+
+// Проверка, что все функции контроллера определены
+const controllerFunctions = ['getAllOrders', 'getMyOrders', 'getOrderById', 'createOrder', 'updateOrderStatus', 'deleteOrder'];
+for (const func of controllerFunctions) {
+  if (typeof orderController[func] !== 'function') {
+    console.error(\`Функция \${func} не определена в контроллере заказов\`);
+    orderController[func] = (req, res) => {
+      res.status(501).json({ message: \`Функция \${func} не реализована\` });
+    };
+  }
+}
+
+// Маршруты для заказов
+router.get('/', auth, admin, orderController.getAllOrders);
+router.get('/myorders', auth, orderController.getMyOrders);
+router.get('/:id', auth, orderController.getOrderById);
+router.post('/', auth, orderController.createOrder);
+router.put('/:id/status', auth, admin, orderController.updateOrderStatus);
+router.delete('/:id', auth, admin, orderController.deleteOrder);
+
+module.exports = router;`;
+
 // Содержимое файла .env
-const envContent = `PORT=5000
+const envContent = `PORT=10000
 MONGO_URI=mongodb+srv://drkhamzat:bizonpass123@cluster0.zcqnqmz.mongodb.net/bizon-furniture?retryWrites=true&w=majority
 JWT_SECRET=bizon-furniture-jwt-secret
 NODE_ENV=production`;
 
-// Создаем директорию, если она не существует
+// Создаем директории, если они не существуют
 const controllersDir = path.dirname(controllerPath);
 if (!fs.existsSync(controllersDir)) {
   fs.mkdirSync(controllersDir, { recursive: true });
+  console.log(`Создана директория: ${controllersDir}`);
+}
+
+const routesDir = path.dirname(orderRoutesPath);
+if (!fs.existsSync(routesDir)) {
+  fs.mkdirSync(routesDir, { recursive: true });
+  console.log(`Создана директория: ${routesDir}`);
 }
 
 // Записываем содержимое файла product.controller.js
@@ -235,6 +415,24 @@ try {
   console.log('Файл product.controller.js успешно исправлен!');
 } catch (error) {
   console.error('Ошибка при исправлении файла product.controller.js:', error);
+  process.exit(1);
+}
+
+// Записываем содержимое файла order.controller.js
+try {
+  fs.writeFileSync(orderControllerPath, orderControllerContent, 'utf8');
+  console.log('Файл order.controller.js успешно исправлен!');
+} catch (error) {
+  console.error('Ошибка при исправлении файла order.controller.js:', error);
+  process.exit(1);
+}
+
+// Записываем содержимое файла order.routes.js
+try {
+  fs.writeFileSync(orderRoutesPath, orderRoutesContent, 'utf8');
+  console.log('Файл order.routes.js успешно исправлен!');
+} catch (error) {
+  console.error('Ошибка при исправлении файла order.routes.js:', error);
   process.exit(1);
 }
 

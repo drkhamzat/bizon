@@ -55,24 +55,22 @@ exports.getOrderById = async (req, res) => {
 exports.createOrder = async (req, res) => {
   try {
     const { 
-      items, 
-      totalAmount, 
-      customerInfo,
-      comment,
-      paymentMethod
+      orderItems, 
+      shippingAddress, 
+      paymentMethod, 
+      totalPrice 
     } = req.body;
     
-    if (!items || items.length === 0) {
+    if (!orderItems || orderItems.length === 0) {
       return res.status(400).json({ message: 'Нет товаров в заказе' });
     }
     
     const order = new Order({
       user: req.user._id,
-      items,
-      totalAmount,
-      customerInfo,
-      comment,
-      paymentMethod
+      orderItems,
+      shippingAddress,
+      paymentMethod,
+      totalPrice,
     });
     
     const createdOrder = await order.save();
@@ -99,9 +97,14 @@ exports.updateOrderStatus = async (req, res) => {
     
     order.status = status;
     
-    if (status === 'завершен') {
+    if (status === 'Оплачен') {
       order.isPaid = true;
       order.paidAt = Date.now();
+    }
+    
+    if (status === 'Доставлен') {
+      order.isDelivered = true;
+      order.deliveredAt = Date.now();
     }
     
     const updatedOrder = await order.save();
